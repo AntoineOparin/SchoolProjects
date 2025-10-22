@@ -1,0 +1,32 @@
+image: mcr.microsoft.com/dotnet/sdk:8.0
+
+stages:
+  - build
+  - test
+
+build-debug:
+  stage: build
+  script:
+    - dotnet build -c Debug
+
+build-release:
+  stage: build
+  script:
+    - dotnet build -c Release
+    - dotnet publish FireworksSimulator/FireworksSimulator.csproj -c Release --no-self-contained -o artifacts -r win-x64
+    - tar -cvf game.tar -C artifacts .
+  artifacts:
+    paths:
+      - game.tar
+
+test:
+  stage: test
+  script:
+    - 'dotnet test --test-adapter-path:. --logger:"junit;LogFilePath=..\artifacts\{assembly}-test-result.xml;MethodFormat=Class;FailureBodyFormat=Verbose"'
+  artifacts:
+    when: always
+    paths:
+      - ./**/*test-result.xml
+    reports:
+      junit:
+        - ./**/*test-result.xml
